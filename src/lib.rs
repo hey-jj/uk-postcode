@@ -303,13 +303,13 @@ pub fn is_valid(postcode: &str) -> bool {
 /// # Examples
 ///
 /// ```
-/// use uk_postcode::valid_outcode;
+/// use uk_postcode::is_valid_outcode;
 ///
-/// assert!(valid_outcode("L27"));
-/// assert!(valid_outcode("AA9A"));
-/// assert!(!valid_outcode("BOGUS"));
+/// assert!(is_valid_outcode("L27"));
+/// assert!(is_valid_outcode("AA9A"));
+/// assert!(!is_valid_outcode("BOGUS"));
 /// ```
-pub fn valid_outcode(outcode: &str) -> bool {
+pub fn is_valid_outcode(outcode: &str) -> bool {
     matches_outcode(outcode)
 }
 

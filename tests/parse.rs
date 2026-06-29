@@ -1,10 +1,10 @@
-//! Coverage of the `parse` struct fields plus `valid_outcode`, `match_corpus`,
+//! Coverage of the `parse` struct fields plus `is_valid_outcode`, `match_corpus`,
 //! and `replace`.
 
 mod common;
 
 use common::load;
-use uk_postcode::{match_corpus, parse, replace, to_normalised, valid_outcode, Postcode};
+use uk_postcode::{is_valid_outcode, match_corpus, parse, replace, to_normalised, Postcode};
 
 const CORPUS: &str = "SW1A2Aa is the residence of the Prime Minister. SW1a 2AB is the residence of her no.2. SW1A   1AA is where the queen lives. They are located in the SW1A outcode";
 
@@ -105,17 +105,17 @@ fn parse_unit_field_over_fixture() {
 }
 
 #[test]
-fn valid_outcode_true_for_every_fixture_outcode() {
+fn is_valid_outcode_true_for_every_fixture_outcode() {
     for case in load("outcodes.json").tests {
         let outcode = case.expected_str();
-        assert!(valid_outcode(&outcode), "valid_outcode({outcode:?})");
+        assert!(is_valid_outcode(&outcode), "is_valid_outcode({outcode:?})");
     }
 }
 
 #[test]
-fn valid_outcode_false_for_garbage() {
+fn is_valid_outcode_false_for_garbage() {
     for code in ["BOGUS", "Hello there", "12345"] {
-        assert!(!valid_outcode(code), "valid_outcode({code:?})");
+        assert!(!is_valid_outcode(code), "is_valid_outcode({code:?})");
     }
 }
 

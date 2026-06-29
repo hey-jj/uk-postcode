@@ -50,7 +50,7 @@ assert_eq!(out.result, "PM lives at [redacted]");
 | Function | Returns | Notes |
 |---|---|---|
 | `is_valid(&str)` | `bool` | Whole-string shape check on the raw input. |
-| `valid_outcode(&str)` | `bool` | Whole-string outward-code check. |
+| `is_valid_outcode(&str)` | `bool` | Whole-string outward-code check. |
 | `to_normalised(&str)` | `Option<String>` | `"OUTCODE INCODE"`, uppercased. |
 | `to_outcode(&str)` | `Option<String>` | Outward code, for example `SW1A`. |
 | `to_incode(&str)` | `Option<String>` | Inward code, for example `2AA`. |
