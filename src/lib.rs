@@ -171,9 +171,8 @@ fn outcode_span(bytes: &[u8]) -> Option<(usize, usize)> {
     Some((min, i))
 }
 
-/// Count leading ECMAScript whitespace bytes in `bytes`.
-fn space_len(bytes: &[u8]) -> usize {
-    let s = std::str::from_utf8(bytes).unwrap_or("");
+/// Count leading ECMAScript whitespace bytes in `s`.
+fn space_len(s: &str) -> usize {
     let mut consumed = 0;
     for c in s.chars() {
         if is_js_space(c) {
@@ -212,8 +211,7 @@ fn matches_postcode(s: &str) -> bool {
     // Drop trailing whitespace between the outcode and the incode.
     let mut head_end = split;
     while head_end > 0 {
-        let prev = &bytes[..head_end];
-        let spaces = trailing_space_len(prev);
+        let spaces = trailing_space_len(&s[..head_end]);
         if spaces == 0 {
             break;
         }
@@ -223,9 +221,8 @@ fn matches_postcode(s: &str) -> bool {
     matches_outcode(head)
 }
 
-/// Count trailing ECMAScript whitespace bytes in `bytes`.
-fn trailing_space_len(bytes: &[u8]) -> usize {
-    let s = std::str::from_utf8(bytes).unwrap_or("");
+/// Count trailing ECMAScript whitespace bytes in `s`.
+fn trailing_space_len(s: &str) -> usize {
     match s.chars().next_back() {
         Some(c) if is_js_space(c) => c.len_utf8(),
         _ => 0,
@@ -534,7 +531,7 @@ fn corpus_match_end(s: &str, start: usize) -> Option<usize> {
     let (min, max) = outcode_span(&bytes[start..])?;
     for out in [max, min] {
         let mut i = start + out;
-        i += space_len(&bytes[i..]);
+        i += space_len(&s[i..]);
         let rest = &bytes[i..];
         if rest.len() >= 3 && is_incode(&rest[..3]) {
             return Some(i + 3);
@@ -684,7 +681,8 @@ fn matches_fixable(s: &str) -> bool {
     // Taking two can starve the required `[0-9oi]` that follows, for example
     // `01 OAA` needs the count to drop to one. This helper retries the tail with
     // the `[a-z\d]?` present then absent, which gives the needed backtracking.
-    fn matches_tail(bytes: &[u8], start: usize) -> bool {
+    fn matches_tail(s: &str, start: usize) -> bool {
+        let bytes = s.as_bytes();
         let n = bytes.len();
         let mut i = start;
 
@@ -706,7 +704,7 @@ fn matches_fixable(s: &str) -> bool {
                 }
             }
             // \s*
-            j += space_len(&bytes[j..]);
+            j += space_len(&s[j..]);
             // [0-9oi]
             if j < n && is_digit_oi(bytes[j]) {
                 j += 1;
@@ -727,7 +725,7 @@ fn matches_fixable(s: &str) -> bool {
                 continue;
             }
             // \s*$
-            j += space_len(&bytes[j..]);
+            j += space_len(&s[j..]);
             if j == n {
                 return true;
             }
@@ -737,17 +735,17 @@ fn matches_fixable(s: &str) -> bool {
 
     let bytes = s.as_bytes();
     let n = bytes.len();
-    let start = space_len(bytes);
+    let start = space_len(s);
 
     // [a-z01]{1,2}. Greedy, so try two characters before one.
     if start >= n || !is_letter_or_01(bytes[start]) {
         return false;
     }
     let can_take_two = start + 1 < n && is_letter_or_01(bytes[start + 1]);
-    if can_take_two && matches_tail(bytes, start + 2) {
+    if can_take_two && matches_tail(s, start + 2) {
         return true;
     }
-    matches_tail(bytes, start + 1)
+    matches_tail(s, start + 1)
 }
 
 /// Clean up a postcode, coercing commonly confused characters.
