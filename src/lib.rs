@@ -769,7 +769,6 @@ pub fn fix(s: &str) -> String {
         return s.to_string();
     }
     let cleaned: String = s
-        .trim_matches(is_js_space)
         .chars()
         .filter(|&c| !is_js_space(c))
         .map(|c| c.to_ascii_uppercase())
