@@ -8,3 +8,8 @@ repository = "https://github.com/hey-jj/uk-postcode"
 readme = "README.md"
 
 [dependencies]
+
+[dev-dependencies]
+# Fixture files are JSON. serde and serde_json parse them in the test harness.
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
