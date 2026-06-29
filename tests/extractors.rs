@@ -1,4 +1,6 @@
-//! Standalone parser and validator coverage, driven by the JSON fixtures.
+//! Coverage of the validator and component extractor functions, driven by the
+//! JSON fixtures. Covers `is_valid`, `to_normalised`, `to_outcode`, `to_incode`,
+//! `to_area`, `to_district`, `to_sub_district`, `to_sector`, and `to_unit`.
 
 mod common;
 
