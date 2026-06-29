@@ -1,0 +1,10 @@
+[package]
+name = "uk-postcode"
+version = "0.1.0"
+edition = "2021"
+description = "UK postcode parse/validate/normalize"
+license = "MIT"
+repository = "https://github.com/hey-jj/uk-postcode"
+readme = "README.md"
+
+[dependencies]
