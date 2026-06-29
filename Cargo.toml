@@ -2,10 +2,12 @@
 name = "uk-postcode"
 version = "0.1.0"
 edition = "2021"
-description = "UK postcode parse/validate/normalize"
+description = "Parse, validate, and normalize UK postcodes with no dependencies"
 license = "MIT"
 repository = "https://github.com/hey-jj/uk-postcode"
 readme = "README.md"
+keywords = ["postcode", "postal-code", "uk", "validation", "parser"]
+categories = ["parser-implementations", "text-processing", "internationalization"]
 
 [dependencies]
 
