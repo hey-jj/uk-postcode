@@ -323,6 +323,7 @@ fn district_split(outcode: &str) -> Option<&str> {
 /// assert!(!is_valid("Definitely wrong"));
 /// assert!(!is_valid(" SW1A 2AA"));
 /// ```
+#[must_use]
 pub fn is_valid(postcode: &str) -> bool {
     matches_postcode(postcode)
 }
@@ -340,6 +341,7 @@ pub fn is_valid(postcode: &str) -> bool {
 /// assert!(is_valid_outcode("AA9A"));
 /// assert!(!is_valid_outcode("BOGUS"));
 /// ```
+#[must_use]
 pub fn is_valid_outcode(outcode: &str) -> bool {
     matches_outcode(outcode)
 }
@@ -359,6 +361,7 @@ pub fn is_valid_outcode(outcode: &str) -> bool {
 /// assert_eq!(to_normalised("L278XY").as_deref(), Some("L27 8XY"));
 /// assert_eq!(to_normalised("Definitely wrong"), None);
 /// ```
+#[must_use]
 pub fn to_normalised(postcode: &str) -> Option<String> {
     let outcode = to_outcode(postcode)?;
     let incode = to_incode(postcode)?;
@@ -377,6 +380,7 @@ pub fn to_normalised(postcode: &str) -> Option<String> {
 /// assert_eq!(to_outcode("L27 8XY").as_deref(), Some("L27"));
 /// assert_eq!(to_outcode("AA9A 9AA").as_deref(), Some("AA9A"));
 /// ```
+#[must_use]
 pub fn to_outcode(postcode: &str) -> Option<String> {
     if !is_valid(postcode) {
         return None;
@@ -397,6 +401,7 @@ pub fn to_outcode(postcode: &str) -> Option<String> {
 ///
 /// assert_eq!(to_incode("L27 8XY").as_deref(), Some("8XY"));
 /// ```
+#[must_use]
 pub fn to_incode(postcode: &str) -> Option<String> {
     if !is_valid(postcode) {
         return None;
@@ -418,6 +423,7 @@ pub fn to_incode(postcode: &str) -> Option<String> {
 /// assert_eq!(to_area("L27 8XY").as_deref(), Some("L"));
 /// assert_eq!(to_area("NR10 3EZ").as_deref(), Some("NR"));
 /// ```
+#[must_use]
 pub fn to_area(postcode: &str) -> Option<String> {
     if !is_valid(postcode) {
         return None;
@@ -442,6 +448,7 @@ pub fn to_area(postcode: &str) -> Option<String> {
 ///
 /// assert_eq!(to_sector("L27 8XY").as_deref(), Some("L27 8"));
 /// ```
+#[must_use]
 pub fn to_sector(postcode: &str) -> Option<String> {
     let outcode = to_outcode(postcode)?;
     let incode = to_incode(postcode)?;
@@ -460,6 +467,7 @@ pub fn to_sector(postcode: &str) -> Option<String> {
 ///
 /// assert_eq!(to_unit("L27 8XY").as_deref(), Some("XY"));
 /// ```
+#[must_use]
 pub fn to_unit(postcode: &str) -> Option<String> {
     if !is_valid(postcode) {
         return None;
@@ -482,6 +490,7 @@ pub fn to_unit(postcode: &str) -> Option<String> {
 /// assert_eq!(to_district("AA9A 9AA").as_deref(), Some("AA9"));
 /// assert_eq!(to_district("A99 9AA").as_deref(), Some("A99"));
 /// ```
+#[must_use]
 pub fn to_district(postcode: &str) -> Option<String> {
     let outcode = to_outcode(postcode)?;
     match district_split(&outcode) {
@@ -504,6 +513,7 @@ pub fn to_district(postcode: &str) -> Option<String> {
 /// assert_eq!(to_sub_district("AA9A 9AA").as_deref(), Some("AA9A"));
 /// assert_eq!(to_sub_district("A9 9AA"), None);
 /// ```
+#[must_use]
 pub fn to_sub_district(postcode: &str) -> Option<String> {
     let outcode = to_outcode(postcode)?;
     district_split(&outcode)?;
@@ -616,6 +626,7 @@ fn corpus_matches(corpus: &str) -> Vec<(usize, usize)> {
 ///
 /// assert!(match_corpus("SW1 NW1 E1 E2").is_empty());
 /// ```
+#[must_use]
 pub fn match_corpus(corpus: &str) -> Vec<String> {
     corpus_matches(corpus)
         .into_iter()
@@ -736,20 +747,18 @@ fn matches_fixable(s: &str) -> bool {
         for take_optional in [true, false] {
             let mut j = i;
             if take_optional {
-                if j < n && is_letter_or_digit(bytes[j]) {
-                    j += 1;
-                } else {
+                if j >= n || !is_letter_or_digit(bytes[j]) {
                     continue;
                 }
+                j += 1;
             }
             // \s*
             j += space_len(&s[j..]);
             // [0-9oi]
-            if j < n && is_digit_oi(bytes[j]) {
-                j += 1;
-            } else {
+            if j >= n || !is_digit_oi(bytes[j]) {
                 continue;
             }
+            j += 1;
             // [a-z01]{2}
             let mut ok = true;
             for _ in 0..2 {
@@ -803,6 +812,7 @@ fn matches_fixable(s: &str) -> bool {
 /// assert_eq!(fix("SW1A 2A0"), "SW1A 2AO");
 /// assert_eq!(fix("hello"), "hello");
 /// ```
+#[must_use]
 pub fn fix(s: &str) -> String {
     if !matches_fixable(s) {
         return s.to_string();
