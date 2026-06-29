@@ -6,7 +6,8 @@
 //!
 //! Every function takes a `&str`. Validators return `bool`. Parsers return
 //! `Option<String>` and yield `None` when the input is not a valid postcode.
-//! [`parse`] returns a [`Postcode`] that carries every component at once.
+//! [`parse`] returns a [`Postcode`], either [`Postcode::Valid`] with every
+//! component or [`Postcode::Invalid`].
 //!
 //! # Examples
 //!
@@ -17,9 +18,9 @@
 //! assert_eq!(to_normalised("sw1a2aa").as_deref(), Some("SW1A 2AA"));
 //!
 //! let p = parse("Sw1A 2aa");
-//! assert!(p.valid);
-//! assert_eq!(p.outcode.as_deref(), Some("SW1A"));
-//! assert_eq!(p.area.as_deref(), Some("SW"));
+//! let valid = p.valid().expect("valid postcode");
+//! assert_eq!(valid.outcode, "SW1A");
+//! assert_eq!(valid.area, "SW");
 //! ```
 //!
 //! # Components
@@ -39,38 +40,68 @@
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
 
-/// A parsed postcode.
+/// The result of parsing a postcode candidate.
 ///
-/// When `valid` is `true`, every field is `Some` except `sub_district`, which is
-/// `Some` only when the outcode ends in a letter. When `valid` is `false`, every
-/// field is `None`.
+/// A valid candidate carries every component in [`ValidPostcode`]. An invalid one
+/// carries nothing. The two cases are separate variants, so a "valid" postcode
+/// with missing components cannot exist.
 ///
 /// Build one with [`parse`].
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
-pub struct Postcode {
-    /// Whether the input is a valid postcode shape.
-    pub valid: bool,
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[must_use]
+pub enum Postcode {
+    /// The candidate had a valid postcode shape. Holds every component.
+    Valid(ValidPostcode),
+    /// The candidate did not have a valid postcode shape.
+    Invalid,
+}
+
+impl Postcode {
+    /// Return `true` when the candidate parsed to a valid postcode.
+    #[must_use]
+    pub fn is_valid(&self) -> bool {
+        matches!(self, Postcode::Valid(_))
+    }
+
+    /// Return the components when valid, or `None` when invalid.
+    #[must_use]
+    pub fn valid(&self) -> Option<&ValidPostcode> {
+        match self {
+            Postcode::Valid(p) => Some(p),
+            Postcode::Invalid => None,
+        }
+    }
+}
+
+/// The components of a valid postcode.
+///
+/// Every field is filled except `sub_district`, which is `Some` only when the
+/// outcode ends in a letter.
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[must_use]
+pub struct ValidPostcode {
     /// Normalised postcode, uppercased with a single space, for example `SW1A 2AA`.
-    pub postcode: Option<String>,
+    pub postcode: String,
     /// Inward code, for example `2AA`.
-    pub incode: Option<String>,
+    pub incode: String,
     /// Outward code, for example `SW1A`.
-    pub outcode: Option<String>,
+    pub outcode: String,
     /// Postcode area, the leading one or two letters, for example `SW`.
-    pub area: Option<String>,
+    pub area: String,
     /// Postcode district, for example `SW1`.
-    pub district: Option<String>,
+    pub district: String,
     /// Postcode sub-district, present only when the outcode ends in a letter,
     /// for example `SW1A`.
     pub sub_district: Option<String>,
     /// Postcode sector, the outcode plus the first incode digit, for example `SW1A 2`.
-    pub sector: Option<String>,
+    pub sector: String,
     /// Postcode unit, the final two letters, for example `AA`.
-    pub unit: Option<String>,
+    pub unit: String,
 }
 
 /// Outcome of [`replace`]: the postcodes found and the rewritten text.
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[must_use]
 pub struct ReplaceResult {
     /// Postcodes found in the text, in document order, with original casing and spacing.
     pub matches: Vec<String>,
@@ -481,9 +512,9 @@ pub fn to_sub_district(postcode: &str) -> Option<String> {
 
 /// Parse a postcode into all of its components at once.
 ///
-/// On an invalid input every field is `None` and `valid` is `false`. On a valid
-/// input every field is `Some` except `sub_district`, which is `Some` only when
-/// the outcode ends in a letter.
+/// Returns [`Postcode::Invalid`] for an invalid input. For a valid input returns
+/// [`Postcode::Valid`] holding every component. The `sub_district` field is `Some`
+/// only when the outcode ends in a letter.
 ///
 /// # Examples
 ///
@@ -491,29 +522,37 @@ pub fn to_sub_district(postcode: &str) -> Option<String> {
 /// use uk_postcode::parse;
 ///
 /// let p = parse("Sw1A 2aa");
-/// assert!(p.valid);
-/// assert_eq!(p.postcode.as_deref(), Some("SW1A 2AA"));
-/// assert_eq!(p.sector.as_deref(), Some("SW1A 2"));
+/// let valid = p.valid().expect("valid postcode");
+/// assert_eq!(valid.postcode, "SW1A 2AA");
+/// assert_eq!(valid.sector, "SW1A 2");
 ///
-/// let bad = parse("foo");
-/// assert!(!bad.valid);
-/// assert_eq!(bad.outcode, None);
+/// assert!(!parse("foo").is_valid());
 /// ```
 pub fn parse(postcode: &str) -> Postcode {
-    if !is_valid(postcode) {
-        return Postcode::default();
-    }
-    Postcode {
-        valid: true,
-        postcode: to_normalised(postcode),
-        incode: to_incode(postcode),
-        outcode: to_outcode(postcode),
-        area: to_area(postcode),
-        district: to_district(postcode),
-        sub_district: to_sub_district(postcode),
-        sector: to_sector(postcode),
-        unit: to_unit(postcode),
-    }
+    let (Some(outcode), Some(incode)) = (to_outcode(postcode), to_incode(postcode)) else {
+        return Postcode::Invalid;
+    };
+    let sector = format!("{outcode} {}", &incode[..1]);
+    let unit = incode[1..].to_string();
+    let (district, sub_district) = match district_split(&outcode) {
+        Some(district) => (district.to_string(), Some(outcode.clone())),
+        None => (outcode.clone(), None),
+    };
+    let area_end = outcode
+        .bytes()
+        .take(2)
+        .take_while(|&b| is_letter(b))
+        .count();
+    Postcode::Valid(ValidPostcode {
+        postcode: format!("{outcode} {incode}"),
+        incode,
+        area: outcode[..area_end].to_string(),
+        district,
+        sub_district,
+        sector,
+        unit,
+        outcode,
+    })
 }
 
 // --- corpus scanning -------------------------------------------------------

@@ -1,5 +1,5 @@
-//! Coverage of the `parse` struct fields plus `is_valid_outcode`, `match_corpus`,
-//! and `replace`.
+//! Coverage of the parsed `Postcode` components plus `is_valid_outcode`,
+//! `match_corpus`, and `replace`.
 
 mod common;
 
@@ -11,25 +11,18 @@ const CORPUS: &str = "SW1A2Aa is the residence of the Prime Minister. SW1a 2AB i
 #[test]
 fn parse_invalid_shape() {
     let p = parse("foo");
-    assert_eq!(p, Postcode::default());
-    assert!(!p.valid);
-    assert_eq!(p.postcode, None);
-    assert_eq!(p.incode, None);
-    assert_eq!(p.outcode, None);
-    assert_eq!(p.area, None);
-    assert_eq!(p.district, None);
-    assert_eq!(p.sub_district, None);
-    assert_eq!(p.sector, None);
-    assert_eq!(p.unit, None);
+    assert_eq!(p, Postcode::Invalid);
+    assert!(!p.is_valid());
+    assert!(p.valid().is_none());
 }
 
 #[test]
 fn parse_valid_flag_over_fixture() {
     for case in load("validation.json").tests {
         assert_eq!(
-            parse(&case.base).valid,
+            parse(&case.base).is_valid(),
             case.expected_bool(),
-            "parse({:?}).valid",
+            "parse({:?}).is_valid()",
             case.base
         );
     }
@@ -38,70 +31,75 @@ fn parse_valid_flag_over_fixture() {
 #[test]
 fn parse_postcode_field_over_fixture() {
     for case in load("normalisation.json").tests {
-        assert_eq!(
-            parse(&case.base).postcode,
-            case.expected_opt_str(),
-            "parse({:?}).postcode",
-            case.base
-        );
+        let got = parse(&case.base).valid().map(|v| v.postcode.clone());
+        assert_eq!(got, case.expected_opt_str(), "parse({:?})", case.base);
     }
-    assert_eq!(parse("Definitly bogus").postcode, None);
+    assert!(parse("Definitly bogus").valid().is_none());
 }
 
 #[test]
 fn parse_incode_field_over_fixture() {
     for case in load("incodes.json").tests {
-        assert_eq!(parse(&case.base).incode, Some(case.expected_str()));
+        let got = parse(&case.base).valid().map(|v| v.incode.clone());
+        assert_eq!(got, Some(case.expected_str()));
     }
-    assert_eq!(parse("Definitly bogus").incode, None);
+    assert!(parse("Definitly bogus").valid().is_none());
 }
 
 #[test]
 fn parse_outcode_field_over_fixture() {
     for case in load("outcodes.json").tests {
-        assert_eq!(parse(&case.base).outcode, Some(case.expected_str()));
+        let got = parse(&case.base).valid().map(|v| v.outcode.clone());
+        assert_eq!(got, Some(case.expected_str()));
     }
-    assert_eq!(parse("Definitly bogus").outcode, None);
+    assert!(parse("Definitly bogus").valid().is_none());
 }
 
 #[test]
 fn parse_area_field_over_fixture() {
     for case in load("areas.json").tests {
-        assert_eq!(parse(&case.base).area, Some(case.expected_str()));
+        let got = parse(&case.base).valid().map(|v| v.area.clone());
+        assert_eq!(got, Some(case.expected_str()));
     }
-    assert_eq!(parse("Definitely bogus").area, None);
+    assert!(parse("Definitely bogus").valid().is_none());
 }
 
 #[test]
 fn parse_district_field_over_fixture() {
     for case in load("districts.json").tests {
-        assert_eq!(parse(&case.base).district, Some(case.expected_str()));
+        let got = parse(&case.base).valid().map(|v| v.district.clone());
+        assert_eq!(got, Some(case.expected_str()));
     }
-    assert_eq!(parse("Definitely bogus").district, None);
+    assert!(parse("Definitely bogus").valid().is_none());
 }
 
 #[test]
 fn parse_sub_district_field_over_fixture() {
     for case in load("sub-districts.json").tests {
-        assert_eq!(parse(&case.base).sub_district, case.expected_opt_str());
+        let got = parse(&case.base)
+            .valid()
+            .and_then(|v| v.sub_district.clone());
+        assert_eq!(got, case.expected_opt_str());
     }
-    assert_eq!(parse("Definitely bogus").sub_district, None);
+    assert!(parse("Definitely bogus").valid().is_none());
 }
 
 #[test]
 fn parse_sector_field_over_fixture() {
     for case in load("sectors.json").tests {
-        assert_eq!(parse(&case.base).sector, Some(case.expected_str()));
+        let got = parse(&case.base).valid().map(|v| v.sector.clone());
+        assert_eq!(got, Some(case.expected_str()));
     }
-    assert_eq!(parse("Definitely bogus").sector, None);
+    assert!(parse("Definitely bogus").valid().is_none());
 }
 
 #[test]
 fn parse_unit_field_over_fixture() {
     for case in load("units.json").tests {
-        assert_eq!(parse(&case.base).unit, Some(case.expected_str()));
+        let got = parse(&case.base).valid().map(|v| v.unit.clone());
+        assert_eq!(got, Some(case.expected_str()));
     }
-    assert_eq!(parse("Definitely bogus").unit, None);
+    assert!(parse("Definitely bogus").valid().is_none());
 }
 
 #[test]

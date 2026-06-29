@@ -19,7 +19,7 @@ fn samples() -> Vec<String> {
 #[test]
 fn every_sample_is_valid() {
     for p in samples() {
-        assert!(parse(&p).valid, "parse({p:?}).valid");
+        assert!(parse(&p).is_valid(), "parse({p:?}).is_valid()");
     }
 }
 
@@ -35,28 +35,16 @@ fn parse_is_case_and_space_insensitive() {
     for p in samples() {
         let base = parse(&p);
         let lower = parse(&p.to_lowercase());
-        // Drop the first whitespace run, the same as the source's replace(/\s/, "").
+        // Drop the first whitespace run, the same as a single-replace of the space.
         let unspaced = p.replacen(' ', "", 1);
         let stripped = parse(&unspaced);
 
-        assert_eq!(base.postcode, lower.postcode, "postcode {p:?}");
-        assert_eq!(base.postcode, stripped.postcode, "postcode {p:?}");
-        assert_eq!(base.incode, lower.incode, "incode {p:?}");
-        assert_eq!(base.incode, stripped.incode, "incode {p:?}");
-        assert_eq!(base.outcode, lower.outcode, "outcode {p:?}");
-        assert_eq!(base.outcode, stripped.outcode, "outcode {p:?}");
-        assert_eq!(base.area, lower.area, "area {p:?}");
-        assert_eq!(base.area, stripped.area, "area {p:?}");
-        assert_eq!(base.district, lower.district, "district {p:?}");
-        assert_eq!(base.district, stripped.district, "district {p:?}");
-        assert_eq!(base.sub_district, lower.sub_district, "sub_district {p:?}");
-        assert_eq!(
-            base.sub_district, stripped.sub_district,
-            "sub_district {p:?}"
-        );
-        assert_eq!(base.sector, lower.sector, "sector {p:?}");
-        assert_eq!(base.sector, stripped.sector, "sector {p:?}");
-        assert_eq!(base.unit, lower.unit, "unit {p:?}");
-        assert_eq!(base.unit, stripped.unit, "unit {p:?}");
+        let base = base.valid().expect("base valid");
+        let lower = lower.valid().expect("lower valid");
+        let stripped = stripped.valid().expect("stripped valid");
+
+        // Casing and spacing do not change any component.
+        assert_eq!(base, lower, "lower {p:?}");
+        assert_eq!(base, stripped, "stripped {p:?}");
     }
 }

@@ -10,7 +10,7 @@ fn gir_0aa_is_invalid() {
     // The Girobank postcode does not fit the standard shape, so the library
     // rejects it.
     assert!(!is_valid("GIR 0AA"));
-    assert!(!parse("GIR 0AA").valid);
+    assert!(!parse("GIR 0AA").is_valid());
     assert_eq!(to_outcode("GIR 0AA"), None);
 }
 
@@ -19,7 +19,7 @@ fn empty_and_whitespace_inputs() {
     assert!(!is_valid(""));
     assert!(!is_valid("   "));
 
-    assert!(!parse("").valid);
+    assert!(!parse("").is_valid());
 
     assert!(match_corpus("").is_empty());
 
@@ -63,7 +63,7 @@ fn unicode_input_stays_invalid() {
         assert_eq!(to_sector(input), None);
         assert_eq!(to_unit(input), None);
         assert_eq!(to_normalised(input), None);
-        assert!(!parse(input).valid);
+        assert!(!parse(input).is_valid());
         assert_eq!(fix(input), input, "fix({input:?})");
     }
 }
@@ -121,16 +121,17 @@ fn normalise_is_idempotent() {
 
 #[test]
 fn parse_valid_fields_are_populated() {
-    // Every valid postcode fills every field except sub_district.
+    // Every valid postcode fills every component. The enum makes the always-present
+    // fields non-optional, so this checks they hold the expected values.
     for pc in ["L27 8XY", "SW1A 2AA", "EC1A 1BB"] {
         let p = parse(pc);
-        assert!(p.valid);
-        assert!(p.postcode.is_some());
-        assert!(p.incode.is_some());
-        assert!(p.outcode.is_some());
-        assert!(p.area.is_some());
-        assert!(p.district.is_some());
-        assert!(p.sector.is_some());
-        assert!(p.unit.is_some());
+        let v = p.valid().expect("valid postcode");
+        assert!(!v.postcode.is_empty());
+        assert!(!v.incode.is_empty());
+        assert!(!v.outcode.is_empty());
+        assert!(!v.area.is_empty());
+        assert!(!v.district.is_empty());
+        assert!(!v.sector.is_empty());
+        assert!(!v.unit.is_empty());
     }
 }

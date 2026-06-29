@@ -27,14 +27,14 @@ assert_eq!(to_normalised("sw1a2aa").as_deref(), Some("SW1A 2AA"));
 
 // Pull every component at once.
 let p = parse("Sw1A 2aa");
-assert!(p.valid);
-assert_eq!(p.outcode.as_deref(), Some("SW1A"));
-assert_eq!(p.incode.as_deref(), Some("2AA"));
-assert_eq!(p.area.as_deref(), Some("SW"));
-assert_eq!(p.district.as_deref(), Some("SW1"));
-assert_eq!(p.sub_district.as_deref(), Some("SW1A"));
-assert_eq!(p.sector.as_deref(), Some("SW1A 2"));
-assert_eq!(p.unit.as_deref(), Some("AA"));
+let v = p.valid().expect("valid postcode");
+assert_eq!(v.outcode, "SW1A");
+assert_eq!(v.incode, "2AA");
+assert_eq!(v.area, "SW");
+assert_eq!(v.district, "SW1");
+assert_eq!(v.sub_district.as_deref(), Some("SW1A"));
+assert_eq!(v.sector, "SW1A 2");
+assert_eq!(v.unit, "AA");
 
 // Coerce common typos like O for 0 and I for 1.
 assert_eq!(fix("SW1A 2A0"), "SW1A 2AO");
@@ -59,7 +59,7 @@ assert_eq!(out.result, "PM lives at [redacted]");
 | `to_sub_district(&str)` | `Option<String>` | Whole outcode when it ends in a letter, else `None`. |
 | `to_sector(&str)` | `Option<String>` | Outcode plus the first incode digit. |
 | `to_unit(&str)` | `Option<String>` | Final two letters. |
-| `parse(&str)` | `Postcode` | Every component, or all `None` when invalid. |
+| `parse(&str)` | `Postcode` | `Valid` with every component, or `Invalid`. |
 | `match_corpus(&str)` | `Vec<String>` | Postcodes found in free text, original formatting. |
 | `replace(&str, &str)` | `ReplaceResult` | Matches plus the text with each match replaced. |
 | `fix(&str)` | `String` | Coerced and reformatted, or the input unchanged. |
