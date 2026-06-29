@@ -135,3 +135,72 @@ fn parse_valid_fields_are_populated() {
         assert!(!v.unit.is_empty());
     }
 }
+
+#[test]
+fn non_ascii_whitespace_separates_a_valid_postcode() {
+    // The shape allows whitespace between the outward and inward codes, and the
+    // whitespace set covers the ECMAScript marks. A postcode split by one of these
+    // stays valid and normalises to a single ASCII space.
+    let separators = [
+        '\u{00A0}', // no-break space
+        '\u{2028}', // line separator
+        '\u{2029}', // paragraph separator
+        '\u{3000}', // ideographic space
+    ];
+    for sep in separators {
+        let input = format!("SW1A{sep}2AA");
+        assert!(is_valid(&input), "is_valid({input:?})");
+        assert_eq!(
+            to_normalised(&input).as_deref(),
+            Some("SW1A 2AA"),
+            "to_normalised({input:?})"
+        );
+        assert_eq!(to_outcode(&input).as_deref(), Some("SW1A"), "{input:?}");
+        assert_eq!(to_incode(&input).as_deref(), Some("2AA"), "{input:?}");
+    }
+}
+
+#[test]
+fn whitespace_set_boundary_code_points() {
+    // U+FEFF (byte order mark) counts as whitespace here even though Rust's own
+    // char::is_whitespace excludes it. U+180E (mongolian vowel separator) is not
+    // whitespace under either rule. These two pin the hand-written set.
+    let bom = "SW1A\u{FEFF}2AA";
+    assert!(is_valid(bom));
+    assert_eq!(to_normalised(bom).as_deref(), Some("SW1A 2AA"));
+    assert_eq!(to_outcode(bom).as_deref(), Some("SW1A"));
+    assert_eq!(fix(bom), "SW1A 2AA");
+
+    let mvs = "SW1A\u{180E}2AA";
+    assert!(!is_valid(mvs));
+    assert_eq!(to_normalised(mvs), None);
+    assert_eq!(to_outcode(mvs), None);
+}
+
+#[test]
+fn replace_treats_the_replacement_as_literal() {
+    // The replacement string is inserted verbatim. Sequences that a regex replace
+    // would expand carry no special meaning here.
+    let cases = [
+        ("$&", "at $& now"),
+        ("$$", "at $$ now"),
+        ("$1", "at $1 now"),
+        ("[$`|$']", "at [$`|$'] now"),
+    ];
+    for (replacement, expected) in cases {
+        let out = replace("at SW1A 2AA now", replacement);
+        assert_eq!(out.result, expected, "replace with {replacement:?}");
+    }
+}
+
+#[test]
+fn corpus_match_backtracks_on_the_spaceless_outcode_split() {
+    // RG45AY has no separating space, so the optional fourth outcode character is
+    // ambiguous. The scanner must read the 5 into the incode, not the outcode.
+    assert_eq!(match_corpus("home RG45AY end"), vec!["RG45AY"]);
+    assert_eq!(match_corpus("L278XY NR103EZ"), vec!["L278XY", "NR103EZ"]);
+
+    let out = replace("home RG45AY end", "X");
+    assert_eq!(out.matches, vec!["RG45AY"]);
+    assert_eq!(out.result, "home X end");
+}
