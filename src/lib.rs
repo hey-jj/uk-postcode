@@ -99,6 +99,51 @@ pub struct ValidPostcode {
     pub unit: String,
 }
 
+impl std::fmt::Display for ValidPostcode {
+    /// Write the normalised postcode, for example `SW1A 2AA`.
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.postcode)
+    }
+}
+
+impl std::fmt::Display for Postcode {
+    /// Write the normalised postcode when valid, or nothing when invalid.
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Postcode::Valid(p) => p.fmt(f),
+            Postcode::Invalid => Ok(()),
+        }
+    }
+}
+
+/// The error from parsing a string that is not a valid postcode.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ParsePostcodeError;
+
+impl std::fmt::Display for ParsePostcodeError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("invalid postcode")
+    }
+}
+
+impl std::error::Error for ParsePostcodeError {}
+
+impl std::str::FromStr for Postcode {
+    type Err = ParsePostcodeError;
+
+    /// Parse a postcode candidate.
+    ///
+    /// Returns the parsed [`Postcode::Valid`] on success. Returns
+    /// [`ParsePostcodeError`] when the input is not a valid postcode, so `?`
+    /// works at the call site. A valid postcode round-trips through [`Display`].
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match parse(s) {
+            Postcode::Invalid => Err(ParsePostcodeError),
+            valid => Ok(valid),
+        }
+    }
+}
+
 /// Outcome of [`replace`]: the postcodes found and the rewritten text.
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[must_use]

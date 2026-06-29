@@ -16,7 +16,7 @@ uk-postcode = "0.1"
 ## Usage
 
 ```rust
-use uk_postcode::{is_valid, to_normalised, parse, fix, match_corpus, replace};
+use uk_postcode::{is_valid, to_normalised, parse, fix, match_corpus, replace, Postcode};
 
 // Validate the shape.
 assert!(is_valid("SW1A 2AA"));
@@ -35,6 +35,10 @@ assert_eq!(v.district, "SW1");
 assert_eq!(v.sub_district.as_deref(), Some("SW1A"));
 assert_eq!(v.sector, "SW1A 2");
 assert_eq!(v.unit, "AA");
+
+// Parse through the standard FromStr trait. Display prints the normalised form.
+let pc: Postcode = "sw1a2aa".parse().unwrap();
+assert_eq!(pc.to_string(), "SW1A 2AA");
 
 // Coerce common typos like O for 0 and I for 1.
 assert_eq!(fix("SW1A 2A0"), "SW1A 2AO");

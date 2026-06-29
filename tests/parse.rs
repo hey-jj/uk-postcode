@@ -4,7 +4,9 @@
 mod common;
 
 use common::load;
-use uk_postcode::{is_valid_outcode, match_corpus, parse, replace, to_normalised, Postcode};
+use uk_postcode::{
+    is_valid_outcode, match_corpus, parse, replace, to_normalised, ParsePostcodeError, Postcode,
+};
 
 const CORPUS: &str = "SW1A2Aa is the residence of the Prime Minister. SW1a 2AB is the residence of her no.2. SW1A   1AA is where the queen lives. They are located in the SW1A outcode";
 
@@ -14,6 +16,29 @@ fn parse_invalid_shape() {
     assert_eq!(p, Postcode::Invalid);
     assert!(!p.is_valid());
     assert!(p.valid().is_none());
+}
+
+#[test]
+fn from_str_parses_valid_and_rejects_invalid() {
+    let p: Postcode = "Sw1A 2aa".parse().expect("valid postcode");
+    assert_eq!(
+        p.valid().map(|v| v.postcode.clone()),
+        Some("SW1A 2AA".into())
+    );
+
+    let err = "foo".parse::<Postcode>().unwrap_err();
+    assert_eq!(err, ParsePostcodeError);
+}
+
+#[test]
+fn display_round_trips_through_from_str() {
+    for input in ["SW1A 2AA", "L278XY", "ec1a 1bb"] {
+        let p: Postcode = input.parse().expect("valid postcode");
+        let text = p.to_string();
+        let again: Postcode = text.parse().expect("normalised round-trips");
+        assert_eq!(p, again, "round-trip {input:?}");
+        assert_eq!(text, p.valid().unwrap().postcode);
+    }
 }
 
 #[test]
