@@ -862,11 +862,7 @@ pub fn fix(s: &str) -> String {
     if !matches_fixable(s) {
         return s.to_string();
     }
-    let cleaned: String = s
-        .chars()
-        .filter(|&c| !is_js_space(c))
-        .map(|c| c.to_ascii_uppercase())
-        .collect();
+    let cleaned = sanitize(s);
     let len = cleaned.len();
     let (outward, inward) = cleaned.split_at(len - 3);
     format!("{} {}", coerce_outcode(outward), coerce("NLL", inward))
