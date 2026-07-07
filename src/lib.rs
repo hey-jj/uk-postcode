@@ -747,14 +747,26 @@ fn coerce(pattern: &str, input: &str) -> String {
     String::from_utf8(out).unwrap_or_default()
 }
 
+/// Coerce a three character outward code by its accepted shape.
+fn coerce_three_char_outcode(outcode: &str) -> String {
+    let bytes = outcode.as_bytes();
+    let second_can_be_letter = is_letter(bytes[1]) || bytes[1] == b'0' || bytes[1] == b'1';
+    let third_can_be_digit = is_digit(bytes[2]) || matches!(bytes[2], b'O' | b'I');
+    if second_can_be_letter && third_can_be_digit {
+        coerce("LLN", outcode)
+    } else {
+        coerce("LN?", outcode)
+    }
+}
+
 /// Coerce an outward code by its length.
 ///
-/// Length 2 uses `LN`, length 3 uses `L??`, length 4 uses `LLN?`. Any other
-/// length is returned unchanged.
+/// Length 2 uses `LN`, length 3 uses `LLN` or `LN?`, length 4 uses `LLN?`.
+/// Any other length is returned unchanged.
 fn coerce_outcode(outcode: &str) -> String {
     match outcode.len() {
         2 => coerce("LN", outcode),
-        3 => coerce("L??", outcode),
+        3 => coerce_three_char_outcode(outcode),
         4 => coerce("LLN?", outcode),
         _ => outcode.to_string(),
     }

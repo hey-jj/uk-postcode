@@ -1,6 +1,6 @@
 //! Coercion behaviour of `fix`.
 
-use uk_postcode::fix;
+use uk_postcode::{fix, is_valid};
 
 #[test]
 fn fix_cases() {
@@ -15,11 +15,12 @@ fn fix_cases() {
         // outward LN format
         ("01 OAA", "O1 0AA"),
         ("SO OAA", "S0 0AA"),
-        // outward L?? format
+        // outward length 3 formats
         ("0W1 OAA", "OW1 0AA"),
-        ("S01 OAA", "S01 0AA"),
+        ("S01 OAA", "SO1 0AA"),
         ("SO1 OAA", "SO1 0AA"),
-        ("SWO OAA", "SWO 0AA"),
+        ("SWO OAA", "SW0 0AA"),
+        ("SOA OAA", "S0A 0AA"),
         ("SW0 OAA", "SW0 0AA"),
         // outward LLN? format
         ("0W1A OAA", "OW1A 0AA"),
@@ -38,5 +39,13 @@ fn fix_cases() {
 
     for (input, expected) in cases {
         assert_eq!(fix(input), *expected, "fix({input:?})");
+    }
+}
+
+#[test]
+fn fix_coerces_three_character_outward_digit_slots() {
+    for input in ["SWO OAA", "SOA OAA"] {
+        let fixed = fix(input);
+        assert!(is_valid(&fixed), "is_valid({fixed:?}) after fix({input:?})");
     }
 }
