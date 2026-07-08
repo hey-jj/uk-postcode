@@ -1,6 +1,6 @@
 [package]
 name = "uk-postcode"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 description = "Parse, validate, and normalize UK postcodes with no dependencies"
 license = "MIT"
